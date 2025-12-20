@@ -21,7 +21,7 @@ const POSHeader = () => {
     // 🟢 REMOVIDO px-4, ajustado margens
     <header className="flex justify-between items-center mb-4 pb-3 border-b border-gray-200 bg-white">
       <h1 className="text-3xl font-bold text-gray-800">
-        <DollarSign className="inline w-7 h-7 mr-2 text-green-600" /> POS - Sistema
+        <DollarSign className="inline w-7 h-7 mr-2 text-green-600" /> Moy
       </h1>
       <div className="flex space-x-4">
         {navItems.map((item) => (

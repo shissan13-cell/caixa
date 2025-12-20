@@ -1,9 +1,11 @@
+// src/pages/Cozinha.tsx
+
 import { useCallback, useEffect } from 'react';
 import { useOrderStore } from '@/stores/orderStore';
 import { KDSColumn } from '@/components/kds/KDSColumn';
-import { OrderStatus, Order, OrderItem } from '@/types/pos';
+import { OrderStatus, Order } from '@/types/pos';
 import { Link } from 'react-router-dom';
-import { ShoppingCart } from 'lucide-react';
+import { ArrowLeft, ChefHat } from 'lucide-react';
 import { NON_KITCHEN_CATEGORIES } from '@/pages/ProductManagementPage';
 
 const normalizeOrders = (orders: Order[]): Order[] =>
@@ -17,11 +19,8 @@ const explodeOrdersByItem = (orders: Order[]): any[] => {
   const exploded: any[] = [];
 
   orders.forEach(order => {
-    // 1. FILTRO: Apenas itens que NÃO são de categorias de "não-cozinha" (bebidas, etc)
+    // FILTRO: Apenas itens que NÃO são de categorias de "não-cozinha" (bebidas, etc)
     const kitchenOnlyItems = order.items.filter((item: any) => {
-      // Como o objeto OrderItem às vezes não traz a categoria direto, 
-      // o ideal é que ela venha do produto ou seja verificada.
-      // Se o seu store salva a categoria no item, o filtro abaixo funciona:
       return !NON_KITCHEN_CATEGORIES.includes(item.category?.toLowerCase());
     });
 
@@ -49,9 +48,6 @@ export default function Cozinha() {
   }, []);
 
   const normalized = normalizeOrders(orders);
-  
-  // 2. APLICAÇÃO DO FILTRO: 
-  // Filtramos os itens para garantir que bebidas não apareçam no KDS
   const explodedItems = explodeOrdersByItem(normalized);
 
   const newOrders = explodedItems
@@ -90,19 +86,34 @@ export default function Cozinha() {
 
   return (
     <div className="h-screen flex flex-col bg-slate-950 p-4 text-white">
-      <header className="flex items-center justify-between mb-6 bg-slate-900 p-6 rounded-2xl border-b-4 border-orange-500">
+      {/* CABEÇALHO PADRONIZADO */}
+      <header className="flex items-center justify-between mb-6 bg-slate-900 p-4 rounded-2xl border-b border-slate-800">
         <div className="flex items-center gap-4">
-          <span className="text-5xl">👨‍🍳</span>
-          <div>
-            <h1 className="text-3xl font-black uppercase">Painel da Cozinha</h1>
-            <p className="text-slate-400 font-bold">Apenas itens para preparo (bebidas ocultas)</p>
+          <Link 
+            to="/" 
+            className="p-2 rounded-full hover:bg-slate-800 transition-colors border border-slate-700 bg-slate-900"
+            title="Voltar ao Menu Principal"
+          >
+            <ArrowLeft className="w-6 h-6 text-slate-300" />
+          </Link>
+
+          <div className="flex items-center gap-3 border-l pl-4 border-slate-700">
+            <div className="bg-orange-600 p-2 rounded-lg">
+              <ChefHat className="text-white w-6 h-6" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-white tracking-tight uppercase">Painel da Cozinha</h1>
+              <p className="text-sm text-slate-400 font-medium">Itens de preparo e monitoramento KDS</p>
+            </div>
           </div>
         </div>
 
-        <Link to="/" className="flex items-center gap-2 bg-white text-slate-900 px-6 py-3 rounded-xl font-black hover:bg-orange-500 hover:text-white">
-          <ShoppingCart size={22} />
-          VOLTAR AO CAIXA
-        </Link>
+        <div className="hidden md:block text-right">
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Status da Operação</p>
+          <p className="text-sm font-semibold text-orange-500 italic">
+            {new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} • Ao Vivo
+          </p>
+        </div>
       </header>
 
       <div className="flex-1 flex gap-4 overflow-hidden">

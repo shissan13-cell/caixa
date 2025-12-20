@@ -123,7 +123,15 @@ export function CartPanel({
         </p>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-3 pr-2">
+      <div
+  className={cn(
+    'p-4 space-y-3 pr-2 transition-all',
+    // 💡 ALTERAÇÃO: Trocamos 'max-h' por 'h' para altura fixa 
+    // e removemos a condição items.length > 1
+    'h-[350px] overflow-y-auto' 
+  )}
+>
+
         {items.length === 0 ? (
           // 🚨 CORREÇÃO: Texto cinza
           <div className="flex flex-col items-center justify-center h-full text-gray-400">

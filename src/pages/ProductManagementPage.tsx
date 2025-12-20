@@ -1,317 +1,388 @@
-// src/pages/ProductManagementPage.tsx
 import { useState, useEffect, useCallback } from 'react';
-import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'; 
-import { Edit, Trash2, Save, X, Loader2, Plus, Coffee, Utensils } from 'lucide-react'; 
+import { toast } from 'sonner';
+import { Link } from 'react-router-dom';
+
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from '@/components/ui/table';
+
+import {
+  Edit,
+  Trash2,
+  Save,
+  X,
+  Loader2,
+  Package,
+  ArrowLeft,
+  Plus
+} from 'lucide-react';
 
 export const NON_KITCHEN_CATEGORIES = ['bebidas', 'sobremesas', 'outros'];
 
-const FOOD_EMOJIS = [
-    { value: '🍔', label: 'Hambúrguer (🍔)' },
-    { value: '🌭', label: 'Cachorro Quente (🌭)' }, 
-    { value: '🍗', label: 'Coxinha/Frango (🍗)' }, 
-    { value: '🍟', label: 'Batata Frita (🍟)' }, 
-    { value: '🥣', label: 'Sopa/Caldo (🥣)' }, 
-    { value: '🍕', label: 'Pizza (🍕)' },
-    { value: '💧', label: 'Água Gota (💧)' },
-    { value: '🍺', label: 'Cerveja (🍺)' },
-    { value: '🥫', label: 'Lata Coca-Cola (🥫)' },
-    { value: '🧃', label: 'Guaravita/Suco (🧃)' },
-    { value: '🍦', label: 'Sorvete (🍦)' },
-    { value: '🍰', label: 'Bolo/Torta (🍰)' },
-    { value: '🥛', label: 'Leite (🥛)' },
-    { value: '🍩', label: 'Doce (🍩)' },
-    { value: '🧀', label: 'Queijo (🧀)' },
-    { value: '🥓', label: 'Bacon (🥓)' },
-    { value: '🥚', label: 'Ovo (🥚)' },
-    { value: '🥗', label: 'Salada (🥗)' }
-];
+const EMOJIS = ['🍔','🌭','🍗','🍟','🍕','🧃','🍺','🍦','🍰','🥤','🥪','🍩'];
 
-const ProductManagementPage = () => {
-    const [products, setProducts] = useState<any[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    
-    const [productName, setProductName] = useState('');
-    const [costPrice, setCostPrice] = useState('');
-    const [salePrice, setSalePrice] = useState('');
-    const [quantity, setQuantity] = useState('');
-    const [category, setCategory] = useState('comidas');
-    const [emoji, setEmoji] = useState('🍔');
+export default function ProductManagementPage() {
+  const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-    const [isEditing, setIsEditing] = useState<string | null>(null);
-    const [editForm, setEditForm] = useState<any>({});
+  // ➕ novo produto
+  const [newProduct, setNewProduct] = useState<any>({
+    nome: '',
+    preco: '',
+    preco_custo: '',
+    estoque: '',
+    categoria: 'comidas',
+    emoji: '🍔'
+  });
 
-    const fetchProducts = useCallback(async () => {
-        setIsLoading(true);
-        const { data, error } = await supabase.from('produtos').select('*').order('nome', { ascending: true });
-        if (error) toast.error("Erro ao carregar");
-        else setProducts(data || []);
-        setIsLoading(false);
-    }, []);
+  // ✏ edição
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editForm, setEditForm] = useState<any>({});
 
-    useEffect(() => { fetchProducts(); }, [fetchProducts]);
+  const fetchProducts = useCallback(async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('produtos')
+      .select('*')
+      .order('nome');
 
-    const handleRegisterProduct = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!productName || !salePrice) return toast.error("Preencha Nome e Preço!");
+    if (error) toast.error('Erro ao carregar produtos');
+    else setProducts(data || []);
+    setLoading(false);
+  }, []);
 
-        const { error } = await supabase.from('produtos').insert([{
-            nome: productName,
-            preco_custo: parseFloat(costPrice) || 0,
-            preco: parseFloat(salePrice),
-            estoque: parseInt(quantity) || 0,
-            categoria: category,
-            emoji: emoji
-            // Removido tempo_preparo
-        }]);
+  useEffect(() => {
+    fetchProducts();
+  }, [fetchProducts]);
 
-        if (error) toast.error("Erro: " + error.message);
-        else {
-            toast.success("Produto cadastrado!");
-            setProductName(''); setCostPrice(''); setSalePrice(''); setQuantity('');
-            fetchProducts();
-        }
-    };
+  // ➕ salvar novo produto
+  const createProduct = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-    const handleSaveEdit = async () => {
-        const { error } = await supabase.from('produtos').update({
-            nome: editForm.nome,
-            preco: parseFloat(editForm.preco),
-            estoque: parseInt(editForm.estoque)
-            // Removido tempo_preparo da edição
-        }).eq('id', isEditing);
+    if (!newProduct.nome || !newProduct.preco) {
+      toast.error('Nome e preço de venda são obrigatórios');
+      return;
+    }
 
-        if (error) toast.error("Erro ao atualizar");
-        else {
-            toast.success("Atualizado com sucesso!");
-            setIsEditing(null);
-            fetchProducts();
-        }
-    };
+    const { error } = await supabase.from('produtos').insert([{
+      ...newProduct,
+      preco: Number(newProduct.preco),
+      preco_custo: Number(newProduct.preco_custo || 0),
+      estoque: Number(newProduct.estoque || 0)
+    }]);
 
-    const handleRemoveProduct = async (id: number) => {
-        if (!confirm("Remover este produto?")) return;
-        await supabase.from('produtos').delete().eq('id', id);
-        fetchProducts();
-    };
+    if (error) toast.error('Erro ao cadastrar');
+    else {
+      toast.success('Produto cadastrado');
+      setNewProduct({
+        nome: '',
+        preco: '',
+        preco_custo: '',
+        estoque: '',
+        categoria: 'comidas',
+        emoji: '🍔'
+      });
+      fetchProducts();
+    }
+  };
 
-    const foodItems = products.filter(p => !NON_KITCHEN_CATEGORIES.includes(p.categoria));
-    const beverages = products.filter(p => NON_KITCHEN_CATEGORIES.includes(p.categoria));
+  const startEdit = (p: any) => {
+    setEditingId(p.id);
+    setEditForm({ ...p });
+  };
 
-    return (
-        <div className="min-h-screen bg-[#F8FAFC] p-4 md:p-10 font-sans text-slate-900">
-            <div className="max-w-7xl mx-auto">
-                <header className="mb-10">
-                    <h1 className="text-3xl font-extrabold text-slate-900">Gestão de Catálogo</h1>
-                    <p className="text-slate-500 text-lg">Administre seus produtos e estoque.</p>
-                </header>
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditForm({});
+  };
 
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-                    <div className="lg:col-span-4 h-fit">
-                        <div className="bg-white rounded-3xl shadow-xl border border-slate-200 p-6 md:p-8 sticky top-8">
-                            <div className="flex items-center gap-3 mb-6 text-blue-600 font-bold text-2xl">
-                                <Plus size={28} strokeWidth={3} /> 
-                                <span>Novo Produto</span>
-                            </div>
-                            
-                            <form onSubmit={handleRegisterProduct} className="flex flex-col gap-5">
-                                <div className="flex flex-col gap-2">
-                                    <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Nome do Item</label>
-                                    <input 
-                                        value={productName} 
-                                        onChange={e => setProductName(e.target.value)} 
-                                        className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl text-lg font-bold outline-none focus:border-blue-500 focus:bg-white transition-all" 
-                                        placeholder="Ex: X-Salada Especial" 
-                                    />
-                                </div>
+  const saveEdit = async () => {
+    const { error } = await supabase
+      .from('produtos')
+      .update({
+        nome: editForm.nome,
+        preco: Number(editForm.preco),
+        preco_custo: Number(editForm.preco_custo),
+        estoque: Number(editForm.estoque),
+        categoria: editForm.categoria,
+        emoji: editForm.emoji
+      })
+      .eq('id', editingId);
 
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="flex flex-col gap-2">
-                                        <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Custo (R$)</label>
-                                        <input 
-                                            type="number" 
-                                            step="0.01" 
-                                            value={costPrice} 
-                                            onChange={e => setCostPrice(e.target.value)} 
-                                            className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl text-lg font-bold outline-none focus:border-blue-500 transition-all" 
-                                        />
-                                    </div>
-                                    <div className="flex flex-col gap-2">
-                                        <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Venda (R$)</label>
-                                        <input 
-                                            type="number" 
-                                            step="0.01" 
-                                            value={salePrice} 
-                                            onChange={e => setSalePrice(e.target.value)} 
-                                            className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl text-lg font-black text-blue-600 outline-none focus:border-blue-500 transition-all" 
-                                        />
-                                    </div>
-                                </div>
+    if (error) toast.error('Erro ao salvar');
+    else {
+      toast.success('Produto atualizado');
+      cancelEdit();
+      fetchProducts();
+    }
+  };
 
-                                {/* Campo de Preparo removido daqui */}
-                                <div className="flex flex-col gap-2">
-                                    <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Estoque</label>
-                                    <input 
-                                        type="number" 
-                                        value={quantity} 
-                                        onChange={e => setQuantity(e.target.value)} 
-                                        className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl text-lg font-bold outline-none focus:border-blue-500 transition-all" 
-                                    />
-                                </div>
+  const removeProduct = async (id: number) => {
+    if (!confirm('Remover este produto?')) return;
+    await supabase.from('produtos').delete().eq('id', id);
+    fetchProducts();
+  };
 
-                                <div className="flex flex-col gap-2">
-                                    <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Categoria e Ícone</label>
-                                    <div className="grid grid-cols-5 gap-2">
-                                        <select 
-                                            value={emoji} 
-                                            onChange={e => setEmoji(e.target.value)} 
-                                            className="col-span-2 px-2 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl text-2xl text-center outline-none focus:border-blue-500 transition-all"
-                                        >
-                                            {FOOD_EMOJIS.map(item => <option key={item.value} value={item.value}>{item.value}</option>)}
-                                        </select>
-                                        <select 
-                                            value={category} 
-                                            onChange={e => setCategory(e.target.value)} 
-                                            className="col-span-3 px-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl text-sm font-bold outline-none focus:border-blue-500 transition-all uppercase"
-                                        >
-                                            <option value="comidas">Comidas</option>
-                                            <option value="bebidas">Bebidas</option>
-                                            <option value="sobremesas">Doces</option>
-                                            <option value="outros">Outros</option>
-                                        </select>
-                                    </div>
-                                </div>
+  return (
+    <div className="min-h-screen bg-slate-50 p-4 text-slate-900">
 
-                                <button 
-                                    type="submit" 
-                                    className="w-full bg-slate-900 text-white py-5 rounded-2xl font-black hover:bg-black transition-all shadow-xl text-lg mt-2 uppercase tracking-widest active:scale-95 flex items-center justify-center gap-3"
-                                >
-                                    <Save size={22} />
-                                    <span>Salvar Produto</span>
-                                </button>
-                            </form>
-                        </div>
-                    </div>
+      {/* 🔹 TOPO PADRÃO CAIXA */}
+      <div className="flex items-center gap-4 mb-6">
+        <Link
+          to="/"
+          className="p-2 rounded-full border border-slate-300 hover:bg-slate-100"
+        >
+          <ArrowLeft />
+        </Link>
 
-                    <div className="lg:col-span-8 space-y-10">
-                        {isLoading ? <Loader2 className="animate-spin mx-auto mt-20 text-slate-300" size={48} /> : (
-                            <>
-                                <SectionTable 
-                                    title="Menu de Comidas" icon={<Utensils size={20} className="text-orange-500" />}
-                                    products={foodItems} isEditing={isEditing} editForm={editForm} setEditForm={setEditForm}
-                                    onEdit={(id:any, p:any) => {setIsEditing(id); setEditForm(p);}}
-                                    onSave={handleSaveEdit} onCancel={() => setIsEditing(null)} onDelete={handleRemoveProduct}
-                                />
-                                <SectionTable 
-                                    title="Bebidas e Diversos" icon={<Coffee size={20} className="text-blue-500" />}
-                                    products={beverages} isEditing={isEditing} editForm={editForm} setEditForm={setEditForm}
-                                    onEdit={(id:any, p:any) => {setIsEditing(id); setEditForm(p);}}
-                                    onSave={handleSaveEdit} onCancel={() => setIsEditing(null)} onDelete={handleRemoveProduct}
-                                />
-                            </>
-                        )}
-                    </div>
-                </div>
-            </div>
+        <div className="flex items-center gap-3 border-l pl-4 border-slate-300">
+          <div className="bg-purple-600 p-2 rounded-lg">
+            <Package className="text-white" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">
+              Catálogo de Produtos
+            </h1>
+            <p className="text-sm text-slate-600">
+              Gerencie produtos, preços e estoque
+            </p>
+          </div>
         </div>
-    );
-};
+      </div>
 
-const SectionTable = ({ title, icon, products, isEditing, editForm, setEditForm, onEdit, onSave, onCancel, onDelete }: any) => (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="px-8 py-5 border-b border-slate-100 flex items-center gap-3 bg-slate-50/50">
-            {icon} <h3 className="font-bold text-slate-800 uppercase tracking-widest text-sm">{title}</h3>
+      {/* ➕ FORMULÁRIO - Reorganizado e Proporcional */}
+      <form
+        onSubmit={createProduct}
+        className="bg-white border border-slate-200 rounded-2xl p-6 mb-8 grid grid-cols-1 md:grid-cols-10 gap-4 items-end"
+      >
+        {/* Nome - Aumentado */}
+        <div className="flex flex-col gap-1 md:col-span-3">
+          <label className="text-xs font-semibold text-slate-500 ml-1">Nome</label>
+          <input
+            placeholder="Nome do produto"
+            value={newProduct.nome}
+            onChange={e => setNewProduct({ ...newProduct, nome: e.target.value })}
+            className="px-3 py-2 border border-slate-300 rounded-lg text-slate-900 w-full"
+          />
         </div>
-        <Table>
+
+        {/* Estoque - Logo após o nome */}
+        <div className="flex flex-col gap-1 md:col-span-1">
+          <label className="text-xs font-semibold text-slate-500 ml-1">Estoque</label>
+          <input
+            type="number"
+            placeholder="0"
+            value={newProduct.estoque}
+            onChange={e => setNewProduct({ ...newProduct, estoque: e.target.value })}
+            className="px-3 py-2 border border-slate-300 rounded-lg text-slate-900 w-full"
+          />
+        </div>
+
+        <div className="flex flex-col gap-1 md:col-span-1">
+          <label className="text-xs font-semibold text-slate-500 ml-1">Custo</label>
+          <input
+            type="number"
+            step="0.01"
+            placeholder="0,00"
+            value={newProduct.preco_custo}
+            onChange={e => setNewProduct({ ...newProduct, preco_custo: e.target.value })}
+            className="px-3 py-2 border border-slate-300 rounded-lg text-slate-900 w-full"
+          />
+        </div>
+
+        <div className="flex flex-col gap-1 md:col-span-1">
+          <label className="text-xs font-semibold text-slate-500 ml-1">Venda</label>
+          <input
+            type="number"
+            step="0.01"
+            placeholder="0,00"
+            value={newProduct.preco}
+            onChange={e => setNewProduct({ ...newProduct, preco: e.target.value })}
+            className="px-3 py-2 border border-slate-300 rounded-lg text-slate-900 w-full"
+          />
+        </div>
+
+        {/* Ícone - Diminuído */}
+        <div className="flex flex-col gap-1 md:col-span-1">
+          <label className="text-xs font-semibold text-slate-500 ml-1">Ícone</label>
+          <select
+            value={newProduct.emoji}
+            onChange={e => setNewProduct({ ...newProduct, emoji: e.target.value })}
+            className="px-2 py-2 border border-slate-300 rounded-lg text-xl text-center w-full appearance-none"
+          >
+            {EMOJIS.map(e => <option key={e}>{e}</option>)}
+          </select>
+        </div>
+
+        <div className="flex flex-col gap-1 md:col-span-2">
+          <label className="text-xs font-semibold text-slate-500 ml-1">Categoria</label>
+          <select
+            value={newProduct.categoria}
+            onChange={e => setNewProduct({ ...newProduct, categoria: e.target.value })}
+            className="px-3 py-2 border border-slate-300 rounded-lg text-slate-900 w-full"
+          >
+            <option value="comidas">Comidas</option>
+            <option value="bebidas">Bebidas</option>
+            <option value="sobremesas">Sobremesas</option>
+            <option value="outros">Outros</option>
+          </select>
+        </div>
+
+        <button
+          type="submit"
+          className="md:col-span-1 bg-blue-600 hover:bg-blue-700 text-white h-[42px] rounded-xl font-semibold flex items-center justify-center"
+          title="Cadastrar"
+        >
+          <Plus size={20} />
+        </button>
+      </form>
+
+      {/* 📋 TABELA */}
+      <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
+        {loading ? (
+          <div className="p-10 flex justify-center">
+            <Loader2 className="animate-spin" />
+          </div>
+        ) : (
+          <Table>
             <TableHeader>
-                <TableRow className="border-b border-slate-100 bg-slate-50/30">
-                    <TableHead className="px-8 font-bold text-slate-500">PRODUTO</TableHead>
-                    <TableHead className="font-bold text-slate-500 text-center">ESTOQUE</TableHead>
-                    <TableHead className="font-bold text-slate-500 text-center">CUSTO</TableHead>
-                    <TableHead className="font-bold text-slate-500 text-center">VENDA</TableHead>
-                    {/* Cabeçalho Preparo removido */}
-                    <TableHead className="px-8 font-bold text-slate-500 text-right">AÇÕES</TableHead>
-                </TableRow>
-            </TableHeader>
-            <TableBody>
-                {products.map((p: any) => (
-                    <TableRow key={p.id} className="border-b border-slate-50 hover:bg-slate-50/50">
-                        <TableCell className="px-8 py-5">
-                            <div className="flex items-center gap-4">
-                                <span className="text-3xl">{p.emoji}</span>
-                                {isEditing === p.id ? (
-                                    <input 
-                                        value={editForm.nome} 
-                                        onChange={e => setEditForm({...editForm, nome: e.target.value})} 
-                                        className="border-2 border-blue-500 rounded-lg px-2 py-1 text-lg font-bold w-full text-black" 
-                                    />
-                                ) : (
-                                    <span className="font-bold text-slate-800 text-lg">{p.nome}</span>
-                                )}
-                            </div>
-                        </TableCell>
-
-                        <TableCell className="text-center">
-                            {isEditing === p.id ? (
-                                <input 
-                                    type="number" 
-                                    value={editForm.estoque} 
-                                    onChange={e => setEditForm({...editForm, estoque: e.target.value})} 
-                                    className="border-2 border-blue-500 rounded-lg px-2 py-1 w-16 text-black font-bold text-center" 
-                                />
-                            ) : (
-                                <span className="font-black px-3 py-1.5 bg-slate-100 rounded-lg text-sm">{p.estoque}</span>
-                            )}
-                        </TableCell>
-                        
-                        <TableCell className="text-center font-medium">
-                            {isEditing === p.id ? (
-                                <input 
-                                    type="number" 
-                                    step="0.01"
-                                    value={editForm.preco_custo} 
-                                    onChange={e => setEditForm({...editForm, preco_custo: e.target.value})} 
-                                    className="border-2 border-blue-500 rounded-lg px-2 py-1 w-24 text-black font-bold text-center" 
-                                />
-                            ) : (
-                                <span className="text-slate-500">R$ {Number(p.preco_custo || 0).toFixed(2)}</span>
-                            )}
-                        </TableCell>
-
-                        <TableCell className="text-center font-black text-slate-900 text-lg">
-                            {isEditing === p.id ? (
-                                <input 
-                                    type="number" 
-                                    step="0.01"
-                                    value={editForm.preco} 
-                                    onChange={e => setEditForm({...editForm, preco: e.target.value})} 
-                                    className="border-2 border-blue-500 rounded-lg px-2 py-1 w-24 text-black font-bold text-center" 
-                                />
-                            ) : `R$ ${Number(p.preco || 0).toFixed(2)}`}
-                        </TableCell>
-
-                        {/* Coluna de Preparo removida */}
-
-                        <TableCell className="px-8 text-right">
-                            <div className="flex justify-end gap-2">
-                                {isEditing === p.id ? (
-                                    <>
-                                        <button onClick={onSave} className="p-2 text-green-600 hover:bg-green-50 rounded-lg"><Save size={24}/></button>
-                                        <button onClick={onCancel} className="p-2 text-red-600 hover:bg-red-50 rounded-lg"><X size={24}/></button>
-                                    </>
-                                ) : (
-                                    <>
-                                        <button onClick={() => onEdit(p.id, p)} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"><Edit size={22}/></button>
-                                        <button onClick={() => onDelete(p.id)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"><Trash2 size={22}/></button>
-                                    </>
-                                )}
-                            </div>
-                        </TableCell>
-                    </TableRow>
+              <TableRow>
+                {['Produto','Estoque','Custo','Venda','Categoria','Ícone','Ações'].map(h => (
+                  <TableHead key={h} className="text-slate-700 font-semibold">
+                    {h}
+                  </TableHead>
                 ))}
+              </TableRow>
+            </TableHeader>
+
+            <TableBody>
+              {products.map(p => (
+                <TableRow key={p.id} className="text-slate-900">
+                  <TableCell className="font-medium text-slate-800">
+                    {editingId === p.id ? (
+                      <input
+                        value={editForm.nome}
+                        onChange={e => setEditForm({ ...editForm, nome: e.target.value })}
+                        className="border border-slate-300 rounded-lg px-2 py-1 w-full text-slate-900"
+                      />
+                    ) : (
+                      p.nome
+                    )}
+                  </TableCell>
+
+                  <TableCell className="text-center">
+                    {editingId === p.id ? (
+                      <input
+                        type="number"
+                        value={editForm.estoque}
+                        onChange={e => setEditForm({ ...editForm, estoque: e.target.value })}
+                        className="w-20 border border-slate-300 rounded-lg text-center text-slate-900"
+                      />
+                    ) : (
+                      <span className="text-slate-700">{p.estoque}</span>
+                    )}
+                  </TableCell>
+
+                  <TableCell className="text-center text-slate-600">
+                    {editingId === p.id ? (
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={editForm.preco_custo}
+                        onChange={e => setEditForm({ ...editForm, preco_custo: e.target.value })}
+                        className="w-24 border border-slate-300 rounded-lg text-center text-slate-900"
+                      />
+                    ) : (
+                      `R$ ${Number(p.preco_custo || 0).toFixed(2)}`
+                    )}
+                  </TableCell>
+
+                  <TableCell className="text-center font-semibold text-slate-900">
+                    {editingId === p.id ? (
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={editForm.preco}
+                        onChange={e => setEditForm({ ...editForm, preco: e.target.value })}
+                        className="w-24 border border-slate-300 rounded-lg text-center text-slate-900"
+                      />
+                    ) : (
+                      `R$ ${Number(p.preco).toFixed(2)}`
+                    )}
+                  </TableCell>
+
+                  <TableCell className="text-center text-slate-700">
+                    {editingId === p.id ? (
+                      <select
+                        value={editForm.categoria}
+                        onChange={e => setEditForm({ ...editForm, categoria: e.target.value })}
+                        className="border border-slate-300 rounded-lg px-2 py-1 text-slate-900"
+                      >
+                        <option value="comidas">Comidas</option>
+                        <option value="bebidas">Bebidas</option>
+                        <option value="sobremesas">Sobremesas</option>
+                        <option value="outros">Outros</option>
+                      </select>
+                    ) : (
+                      p.categoria
+                    )}
+                  </TableCell>
+
+                  <TableCell className="text-center text-xl">
+                    {editingId === p.id ? (
+                      <select
+                        value={editForm.emoji}
+                        onChange={e => setEditForm({ ...editForm, emoji: e.target.value })}
+                        className="border border-slate-300 rounded-lg px-2 py-1"
+                      >
+                        {EMOJIS.map(e => (
+                          <option key={e} value={e}>{e}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      p.emoji
+                    )}
+                  </TableCell>
+
+                  <TableCell className="text-right">
+                    {editingId === p.id ? (
+                      <>
+                        <button onClick={saveEdit} className="p-2 text-green-600">
+                          <Save size={18} />
+                        </button>
+                        <button onClick={cancelEdit} className="p-2 text-red-600">
+                          <X size={18} />
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => startEdit(p)}
+                          className="p-2 text-slate-500 hover:text-blue-600"
+                        >
+                          <Edit size={18} />
+                        </button>
+                        <button
+                          onClick={() => removeProduct(p.id)}
+                          className="p-2 text-slate-500 hover:text-red-600"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
             </TableBody>
-        </Table>
+          </Table>
+        )}
+      </div>
     </div>
-);
-export default ProductManagementPage;
+  );
+}

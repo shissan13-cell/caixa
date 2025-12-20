@@ -2,13 +2,14 @@
 
 import { useState, useCallback, useMemo, useEffect } from 'react'; 
 import { supabase } from "@/lib/supabase";
+import { Link } from 'react-router-dom'; // Importado para navegação
 
 import { CartItem, PaymentMethod, Product, Order, OrderItem } from '@/types/pos';
 import { CartPanel } from '@/components/pos/CartPanel';
 import OrderStatusPanel from '@/components/pos/OrderStatusPanel';
 import { useOrderStore } from '@/stores/orderStore';
 import { toast } from 'sonner';
-import { Utensils, GlassWater, Loader2 } from 'lucide-react'; 
+import { Utensils, GlassWater, Loader2, Store, ArrowLeft } from 'lucide-react'; // Adicionado ArrowLeft
 import { NON_KITCHEN_CATEGORIES } from '@/pages/ProductManagementPage';
 import { generateReceiptContent, sendPrintRequest } from '@/utils/printUtils';
 
@@ -201,22 +202,56 @@ export default function Caixa() {
   );
 
   if (isLoading) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
-        <span className="ml-2">Carregando...</span>
+  return (
+    <div className="flex h-screen w-full items-center justify-center bg-white">
+      <div className="flex flex-col items-center gap-2">
+        <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
+        <span className="text-slate-500 font-medium animate-pulse">
+          Carregando PDV...
+        </span>
       </div>
-    );
-  }
+    </div>
+  );
+}
 
   return (
-    <div className="flex flex-col lg:flex-row flex-1 overflow-hidden p-4 pt-0 gap-4">
+    <div className="flex flex-col lg:flex-row flex-1 min-h-screen bg-white overflow-hidden p-4 pt-0 gap-4">
 
       {/* PRODUTOS */}
-      <div className="flex-1 overflow-y-auto lg:pr-4 space-y-6">
+      <div className="flex-1 overflow-y-auto lg:pr-4 space-y-6 bg-white pt-4">
+        
+        {/* TITULO DA PÁGINA COM BOTÃO VOLTAR */}
+        <div className="flex items-center justify-between mb-6 px-1">
+          <div className="flex items-center gap-4">
+            <Link 
+              to="/" 
+              className="p-2 rounded-full hover:bg-slate-100 transition-colors border border-slate-200"
+              title="Voltar ao Menu Principal"
+            >
+              <ArrowLeft className="w-6 h-6 text-slate-600" />
+            </Link>
+
+            <div className="flex items-center gap-3 border-l pl-4 border-slate-200">
+              <div className="bg-blue-600 p-2 rounded-lg">
+                <Store className="text-white w-6 h-6" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Frente de Caixa</h1>
+                <p className="text-sm text-gray-500 font-medium">Selecione os produtos para o pedido</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="hidden md:block text-right">
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Data de Hoje</p>
+            <p className="text-sm font-semibold text-gray-700">
+              {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}
+            </p>
+          </div>
+        </div>
 
         <div className="bg-white p-4 rounded-xl shadow border">
-          <h2 className="flex items-center gap-2 text-xl font-semibold mb-4 border-b pb-2">
+          <h2 className="flex items-center gap-2 text-xl font-semibold mb-4 border-b pb-2 text-black">
             <Utensils className="text-orange-500" /> Comidas
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
@@ -227,7 +262,7 @@ export default function Caixa() {
         </div>
 
         <div className="bg-white p-4 rounded-xl shadow border">
-          <h2 className="flex items-center gap-2 text-xl font-semibold mb-4 border-b pb-2">
+          <h2 className="flex items-center gap-2 text-xl font-semibold mb-4 border-b pb-2 text-black">
             <GlassWater className="text-blue-500" /> Bebidas
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
@@ -239,7 +274,7 @@ export default function Caixa() {
 
         {otherProducts.length > 0 && (
           <div className="bg-white p-4 rounded-xl shadow border">
-            <h2 className="text-lg font-semibold mb-3">Outros</h2>
+            <h2 className="text-lg font-semibold mb-3 text-black">Outros</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {otherProducts.map(p => (
                 <ProductCard key={p.id} product={p} onSelect={handleAddProduct} />
@@ -250,7 +285,7 @@ export default function Caixa() {
       </div>
 
       {/* CARRINHO + STATUS */}
-      <div className="w-full lg:w-[380px] flex flex-col gap-4 flex-shrink-0">
+      <div className="w-full lg:w-[380px] flex flex-col gap-4 flex-shrink-0 bg-white pt-4">
         <CartPanel
           items={cartItems}
           onUpdateQuantity={handleUpdateQuantity}

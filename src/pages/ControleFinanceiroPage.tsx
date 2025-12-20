@@ -1,10 +1,20 @@
 // src/pages/ControleFinanceiroPage.tsx
 
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useOrderStore } from '@/stores/orderStore';
 import { useMemo, useCallback, useEffect, useState } from 'react'; 
 import { Order } from '@/types/pos';
-import { DollarSign, BarChart2, TrendingUp, HandCoins, ClipboardList, Eraser, Loader2 } from 'lucide-react'; 
+import { 
+    DollarSign, 
+    BarChart2, 
+    TrendingUp, 
+    HandCoins, 
+    ClipboardList, 
+    Eraser, 
+    Loader2, 
+    ArrowLeft, 
+    PieChart 
+} from 'lucide-react'; 
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 
@@ -48,7 +58,6 @@ const ControleFinanceiroPage = () => {
 
     useEffect(() => {
         const loadData = async () => {
-            // Garante que os pedidos locais foram carregados
             await useOrderStore.persist.rehydrate();
             
             const { data, error } = await supabase.from('produtos').select('*');
@@ -62,7 +71,6 @@ const ControleFinanceiroPage = () => {
         loadData();
     }, []);
 
-    // Mapa de produtos para busca rápida por ID (converte ID para string para evitar erro de tipo)
     const productDetailMap = useMemo(() => {
         return dbProducts.reduce((acc, product) => {
             acc[String(product.id)] = {
@@ -103,24 +111,18 @@ const ControleFinanceiroPage = () => {
             }
             
             order.items.forEach(item => {
-                // Tenta encontrar o ID no banco, se não existir usa o ID do item
                 const productId = String(item.productId || item.id);
                 const quantity = Number(item.quantity) || 0;
                 const detail = productDetailMap[productId];
                 
-                // CÁLCULO DE CUSTO: Se achar no banco, usa o preco_custo, senão 0
                 const unitCost = detail?.costPrice || 0;
                 totalCostOfGoodsSold += unitCost * quantity;
 
-                // DADOS PARA A TABELA: Se não achar no banco, usa os dados salvos no pedido (fallback)
                 const name = detail?.name || item.productName || 'Produto';
                 const emoji = detail?.emoji || '📦';
                 const unitPrice = detail?.price || Number(item.price) || 0;
                 const revenue = quantity * unitPrice;
 
-                // Agrupamento por Produto
-// Agrupamento por Produto
-                // Usamos o productId se o produto for do banco, ou o nome se for um item manual (como bebida)
                 const groupingKey = detail ? productId : name;
 
                 if (productSalesSummary[groupingKey]) {
@@ -154,20 +156,43 @@ const ControleFinanceiroPage = () => {
 
     return (
         <div className="p-8 h-full bg-gray-50 overflow-auto">
+            {/* CABEÇALHO PADRONIZADO COM O CAIXA */}
             <div className="flex justify-between items-center mb-6 border-b pb-4">
-                <h1 className="text-3xl font-bold text-gray-800">📊 Controle Financeiro e Caixa</h1>
-                <div className="flex space-x-4">
+                <div className="flex items-center gap-4">
+                    <Link 
+                        to="/" 
+                        className="p-2 rounded-full hover:bg-slate-100 transition-colors border border-slate-200 bg-white"
+                        title="Voltar ao Menu Principal"
+                    >
+                        <ArrowLeft className="w-6 h-6 text-slate-600" />
+                    </Link>
+
+                    <div className="flex items-center gap-3 border-l pl-4 border-slate-200">
+                        <div className="bg-indigo-600 p-2 rounded-lg">
+                            <PieChart className="text-white w-6 h-6" />
+                        </div>
+                        <div>
+                            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Controle Financeiro</h1>
+                            <p className="text-sm text-gray-500 font-medium">Gestão de vendas e lucratividade</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="flex items-center space-x-4">
+                    <div className="hidden md:block text-right mr-4">
+                        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Relatório de Hoje</p>
+                        <p className="text-sm font-semibold text-gray-700">
+                            {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}
+                        </p>
+                    </div>
                     <button 
                         onClick={handleClearFinance}
-                        className="flex items-center gap-2 bg-red-600 text-white p-2 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+                        className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 text-sm font-medium"
                         disabled={orders.length === 0}
                     >
-                        <Eraser className="w-5 h-5" />
+                        <Eraser className="w-4 h-4" />
                         Limpar Dados
                     </button>
-                    <Link to="/caixa" className="bg-slate-900 text-white p-2 px-4 rounded-lg hover:bg-black transition-colors">
-                        Voltar para a Venda
-                    </Link>
                 </div>
             </div>
             
