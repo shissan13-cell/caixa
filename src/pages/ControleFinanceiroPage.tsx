@@ -155,8 +155,9 @@ const ControleFinanceiroPage = () => {
     if (isLoading) return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin" size={48}/></div>;
 
     return (
-        <div className="p-8 h-full bg-gray-50 overflow-auto">
-            {/* CABEÇALHO PADRONIZADO COM O CAIXA */}
+        /* AJUSTE: min-h-screen garante que o fundo cinza ocupe tudo, pb-20 dá respiro no final */
+        <div className="min-h-screen bg-gray-50 p-8 pb-20">
+            {/* CABEÇALHO */}
             <div className="flex justify-between items-center mb-6 border-b pb-4">
                 <div className="flex items-center gap-4">
                     <Link 
@@ -196,6 +197,7 @@ const ControleFinanceiroPage = () => {
                 </div>
             </div>
             
+            {/* CARDS DE MÉTRICAS */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <MetricCard 
                     icon={DollarSign} 
@@ -220,6 +222,7 @@ const ControleFinanceiroPage = () => {
                 />
             </div>
 
+            {/* RESUMO DE PAGAMENTO */}
             <div className="bg-white p-6 rounded-xl shadow-md border mb-8">
                 <h2 className="text-xl font-semibold mb-4 text-gray-800 flex items-center gap-2">
                     <HandCoins className="w-6 h-6 text-yellow-600" />
@@ -235,6 +238,7 @@ const ControleFinanceiroPage = () => {
                 </div>
             </div>
             
+            {/* TABELA DE PRODUTOS */}
             <div className="bg-white p-6 rounded-xl shadow-md border">
                 <h2 className="text-xl font-semibold mb-4 text-gray-800 flex items-center gap-2">
                     <ClipboardList className="w-6 h-6 text-indigo-600" />
