@@ -166,7 +166,31 @@ export default function Caixa() {
       createdAt: now,
       sentToKitchenAt: now,
     };
+// 🔹 pega usuário logado
+const {
+  data: { user }
+} = await supabase.auth.getUser();
 
+if (!user) {
+  toast.error('Usuário não autenticado');
+  return;
+}
+
+// 🔹 salva pedido no Supabase (COMPARTILHADO ENTRE APARELHOS)
+const { error } = await supabase.from('orders').insert({
+  id: order.id,
+  user_id: user.id,
+  total: order.total,
+  payment_method: order.paymentMethod,
+  status: order.status,
+  items: order.items,
+  created_at: order.createdAt,
+});
+
+if (error) {
+  toast.error('Erro ao salvar venda');
+  return;
+}
     const receipt = generateReceiptContent(order, changeAmount, receivedAmount);
     sendPrintRequest(receipt, 'receipt');
 
