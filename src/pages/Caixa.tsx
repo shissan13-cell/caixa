@@ -3,7 +3,7 @@
 import { useState, useCallback, useMemo, useEffect } from 'react'; 
 import { supabase } from "@/lib/supabase";
 import { Link } from 'react-router-dom'; // Importado para navegação
-
+import { useAuthStore } from '@/stores/authStore';
 import { CartItem, PaymentMethod, Product, Order, OrderItem } from '@/types/pos';
 import { CartPanel } from '@/components/pos/CartPanel';
 import OrderStatusPanel from '@/components/pos/OrderStatusPanel';
@@ -48,6 +48,8 @@ export default function Caixa() {
   const [receivedAmount, setReceivedAmount] = useState(0);
 
   const { orders, addOrder } = useOrderStore();
+const { session } = useAuthStore();
+
 
   // 🔹 Buscar produtos
   const fetchProducts = useCallback(async () => {
@@ -166,12 +168,8 @@ export default function Caixa() {
       createdAt: now,
       sentToKitchenAt: now,
     };
-// 🔹 pega usuário logado
-const {
-  data: { user }
-} = await supabase.auth.getUser();
 
-if (!user) {
+if (!session?.user) {
   toast.error('Usuário não autenticado');
   return;
 }
@@ -179,14 +177,13 @@ if (!user) {
 // 🔹 salva pedido no Supabase (COMPARTILHADO ENTRE APARELHOS)
 const { error } = await supabase.from('orders').insert({
   id: order.id,
-  user_id: user.id,
+  user_id: session.user.id,
   total: order.total,
   payment_method: order.paymentMethod,
   status: order.status,
   items: order.items,
   created_at: order.createdAt,
 });
-
 if (error) {
   toast.error('Erro ao salvar venda');
   return;
